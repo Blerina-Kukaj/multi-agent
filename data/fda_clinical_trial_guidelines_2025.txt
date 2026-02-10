@@ -1,0 +1,22 @@
+FDA Guidance on Modernizing Clinical Trial Design – 2025 Update
+
+Section 1: Introduction and Scope
+The U.S. Food and Drug Administration (FDA) has issued updated guidance to sponsors and investigators on modernizing clinical trial design. This guidance applies to all phases of drug development, with particular emphasis on oncology, rare diseases, and gene therapy. The document encourages the adoption of adaptive trial designs, master protocols, and digital health technologies to improve trial efficiency while maintaining rigorous safety and efficacy standards.
+
+Section 2: Adaptive Trial Designs
+Adaptive trial designs allow pre-planned modifications to one or more aspects of the trial based on interim data analysis. The FDA recommends that sponsors consider Bayesian adaptive randomization, sample size re-estimation, and seamless Phase II/III designs. The agency notes that adaptive designs can reduce median trial timelines by 15-25% when properly implemented. Key requirements include pre-specification of adaptation rules in the statistical analysis plan and maintaining type I error control.
+
+Section 3: Master Protocols
+The FDA encourages the use of master protocols, including basket trials, umbrella trials, and platform trials, particularly in oncology. Basket trials test a single therapy across multiple tumor types sharing a common biomarker. Umbrella trials test multiple therapies within a single disease stratified by biomarker. Platform trials allow continuous evaluation of multiple therapies against a common control. The agency notes that platform trials have demonstrated a 30-40% reduction in per-arm enrollment costs.
+
+Section 4: Digital Health Technologies
+Sponsors are encouraged to incorporate FDA-cleared digital health technologies (DHTs) for remote patient monitoring, electronic clinical outcome assessments (eCOAs), and wearable-derived endpoints. The FDA has established a Digital Health Center of Excellence to support the evaluation of novel digital endpoints. Requirements include validation of DHT measurements against established clinical endpoints and documentation of data integrity controls.
+
+Section 5: Diversity and Inclusion Requirements
+Beginning in 2025, the FDA requires sponsors to submit a Diversity Action Plan for all Phase III trials and certain Phase II trials. Plans must include specific enrollment targets for underrepresented racial and ethnic groups, strategies for geographic site diversity, and provisions for reducing participant burden through decentralized trial elements. Failure to submit a diversity plan may result in a refuse-to-file decision.
+
+Section 6: Accelerated Approval Pathway Updates
+The FDA has updated requirements for post-marketing commitments under accelerated approval. Sponsors must now initiate confirmatory trials within 6 months of accelerated approval and complete them within a pre-agreed timeline, typically 3-5 years. The agency reserves the right to use expedited withdrawal procedures if sponsors fail to conduct required confirmatory studies with due diligence.
+
+Section 7: Real-World Evidence Integration
+The FDA supports the use of real-world evidence (RWE) derived from electronic health records, claims databases, and patient registries as supplementary evidence in regulatory submissions. RWE may serve as external control arms for single-arm trials, support label expansion, and inform post-market safety surveillance. All RWE submissions must include a detailed data quality assessment and analysis plan.

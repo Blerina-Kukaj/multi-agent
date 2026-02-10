@@ -1,0 +1,22 @@
+Patient Data Privacy Framework – HIPAA-Aligned Data Handling Standards
+
+Section 1: Overview and Applicability
+This framework establishes standards for handling protected health information (PHI) in clinical research and healthcare operations. It aligns with HIPAA Privacy and Security Rules, HITECH Act requirements, and state-specific privacy regulations. The framework applies to all personnel, contractors, and systems that create, receive, maintain, or transmit PHI in any form, including electronic, paper, and oral.
+
+Section 2: Data Classification and Handling
+All patient data must be classified into three tiers: Tier 1 – Direct identifiers (name, SSN, MRN) requiring full encryption and access controls. Tier 2 – Quasi-identifiers (dates, ZIP codes, ages) requiring de-identification per HIPAA Safe Harbor or Expert Determination methods. Tier 3 – Clinical data elements (diagnoses, lab values) that may be used in aggregate with appropriate safeguards. Data custodians must maintain a current data inventory and classification registry updated quarterly.
+
+Section 3: De-identification Standards
+The Safe Harbor method requires removal of 18 specified identifier categories. The Expert Determination method requires a qualified statistical expert to certify that the risk of re-identification is very small. For clinical research datasets, the framework recommends k-anonymity with k≥5 for released datasets and differential privacy mechanisms for query-based access. All de-identification procedures must be documented and auditable.
+
+Section 4: Access Control Requirements
+Access to PHI must follow the minimum necessary standard. Role-based access control (RBAC) must be implemented with at least four privilege levels: read-only, read-write, admin, and super-admin. Multi-factor authentication is required for all remote access and for local access to Tier 1 data. Access logs must be retained for a minimum of 6 years and reviewed quarterly for anomalous activity.
+
+Section 5: Data Breach Response Protocol
+Organizations must maintain an incident response plan for PHI breaches. Breaches affecting 500 or more individuals require notification to HHS within 60 days and prominent media notice. All breaches require individual notification within 60 days and documentation in a breach log maintained for 6 years. The framework recommends annual breach simulation exercises and quarterly tabletop reviews.
+
+Section 6: Cross-Border Data Transfers
+When transferring PHI across state or national borders for multi-site clinical trials, organizations must ensure compliance with the most restrictive applicable regulations. International transfers require standard contractual clauses, adequacy assessments, and documented data impact assessments. EU-sourced data must additionally comply with GDPR data transfer requirements including appropriate safeguards under Article 46.
+
+Section 7: Training and Compliance Monitoring
+All personnel with access to PHI must complete annual privacy and security training. Training must cover HIPAA requirements, organizational policies, incident reporting procedures, and role-specific data handling protocols. Compliance is monitored through quarterly audits, annual risk assessments, and continuous monitoring of access logs. Non-compliance may result in disciplinary action, including termination and referral for regulatory penalties.

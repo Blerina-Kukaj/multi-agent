@@ -1,0 +1,22 @@
+Oncology Drug Pipeline Status Report – Q4 2025
+
+Section 1: Pipeline Overview
+As of Q4 2025, the global oncology drug pipeline comprises approximately 7,500 active programs across all phases. Immuno-oncology agents remain the largest therapeutic category, representing 35% of the pipeline. Antibody-drug conjugates (ADCs) have seen the fastest growth, with a 45% year-over-year increase in clinical-stage programs. Cell and gene therapies account for approximately 12% of oncology pipeline assets.
+
+Section 2: Phase III Pipeline Highlights
+There are currently 620 Phase III oncology programs globally. Non-small cell lung cancer (NSCLC) leads with 98 programs, followed by breast cancer (87 programs) and colorectal cancer (54 programs). Notable trends include the expansion of bispecific antibodies into solid tumors and the development of next-generation checkpoint inhibitors targeting TIGIT, LAG-3, and TIM-3. Median Phase III trial duration for oncology has increased to 4.2 years, up from 3.8 years in 2023.
+
+Section 3: Regulatory Approvals and Trends
+The FDA approved 18 new oncology molecular entities in 2025, slightly above the 5-year average of 16. Of these, 7 received accelerated approval and 11 received breakthrough therapy designation. The median review time for oncology NMEs was 8.2 months under priority review. European Medicines Agency (EMA) approvals tracked similarly, with 15 new oncology approvals in 2025.
+
+Section 4: Key Therapeutic Areas
+ADCs continue to show strong clinical activity. Trastuzumab deruxtecan has expanded to 6 approved indications. Sacituzumab govitecan has demonstrated activity in platinum-resistant ovarian cancer. The bispecific T-cell engager class has achieved approvals in hematologic malignancies, with solid tumor data emerging. CAR-T therapies have expanded beyond B-cell malignancies into multiple myeloma and are being explored in solid tumors with early-phase data showing promise in glioblastoma and mesothelioma.
+
+Section 5: Clinical Trial Costs and Timelines
+The average cost per oncology Phase III clinical trial has reached $350 million, a 12% increase from 2023. Key cost drivers include longer trial durations, increased regulatory requirements for diversity enrollment, and the complexity of biomarker-driven trial designs. Decentralized trial elements have shown potential to reduce per-patient costs by 20-30% in oncology, primarily through reduced site visit burden and broader geographic recruitment.
+
+Section 6: Investment and Funding Landscape
+Oncology remains the most funded therapeutic area, attracting $45 billion in venture capital and public market investment in 2025. Late-stage assets command premium valuations, with average acquisition prices for Phase III oncology companies reaching $4.2 billion. The IPO market for oncology biotechs has recovered, with 28 oncology-focused IPOs in 2025.
+
+Section 7: Future Outlook and Recommendations
+The oncology pipeline is expected to continue growing, with an emphasis on precision medicine, combination strategies, and earlier lines of therapy. Key recommendations for sponsors include investing in companion diagnostic development, leveraging real-world evidence for lifecycle management, and adopting adaptive trial designs to shorten development timelines. Collaboration with regulatory agencies through pre-submission meetings is strongly recommended for novel endpoints and trial designs.

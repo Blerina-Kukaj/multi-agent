@@ -1,0 +1,22 @@
+Pharmacovigilance Best Practices – Post-Market Drug Safety
+
+Section 1: Pharmacovigilance Framework Overview
+Pharmacovigilance (PV) encompasses the science and activities relating to the detection, assessment, understanding, and prevention of adverse drug reactions (ADRs). This document outlines best practices for post-market drug safety monitoring aligned with ICH E2E guidelines, FDA post-marketing safety reporting requirements (21 CFR 314.80/600.80), and EU GVP Module VI. All marketing authorization holders (MAHs) must maintain a PV system with a qualified person for pharmacovigilance (QPPV).
+
+Section 2: Signal Detection and Management
+Signal detection should employ a combination of disproportionality analysis (PRR, ROR, EBGM), clinical review of individual case safety reports (ICSRs), and literature surveillance. Automated signal detection algorithms should run at minimum monthly against the company safety database and quarterly against external databases (FAERS, EudraVigilance). Signals must be evaluated using a standardized signal assessment framework with defined escalation criteria. The median time from signal detection to regulatory communication should not exceed 90 days.
+
+Section 3: Periodic Safety Reporting
+Periodic Benefit-Risk Evaluation Reports (PBRERs) must be submitted at defined intervals post-approval: every 6 months for the first 2 years, annually for the next 3 years, and every 5 years thereafter unless otherwise specified. PBRERs must include a comprehensive benefit-risk analysis using a structured framework (e.g., FDA's Benefit-Risk Framework or EMA's Effects Table). The Periodic Adverse Drug Experience Report (PADER) is required by the FDA at the same intervals.
+
+Section 4: Risk Management Strategies
+Risk Evaluation and Mitigation Strategies (REMS) are required when the FDA determines that a REMS is necessary to ensure the benefits outweigh the risks. Common REMS elements include medication guides, communication plans, and elements to assure safe use (ETASU). Risk management plans (RMPs) required by the EMA include safety specification, pharmacovigilance plan, and risk minimization measures. All risk management activities should be regularly assessed for effectiveness.
+
+Section 5: Adverse Event Reporting Requirements
+Serious adverse events must be reported to regulatory authorities within 15 calendar days (7 days for fatal/life-threatening events). Non-serious adverse events must be reported within 90 days. All reports must use MedDRA coding for adverse event terms, WHO Drug Dictionary for drug identification, and the ICH E2B(R3) format for electronic submission. Consumer (non-healthcare professional) reports must be collected and submitted with the same diligence as healthcare professional reports.
+
+Section 6: Technology and Automation in Pharmacovigilance
+Modern PV operations should leverage: (1) AI/ML-assisted case processing, which has shown a 50% reduction in case processing time. (2) Natural language processing for automated literature surveillance covering 95%+ of relevant publications. (3) Automated signal detection dashboards with real-time safety database access. (4) Validated safety database systems (e.g., Argus Safety, ArisGlobal) with full audit trails. (5) Robotic process automation for high-volume, rule-based tasks such as duplicate detection and report distribution.
+
+Section 7: Quality Management in Pharmacovigilance
+PV quality management must include: standard operating procedures covering all PV activities, regular training and competency assessments for PV personnel, internal audits conducted at least annually, key performance indicators (KPIs) including case processing timeliness (target: 95% within regulatory timelines), data accuracy (target: less than 2% error rate), and signal detection currency. Corrective and preventive actions (CAPAs) must be tracked to closure with effectiveness verification.

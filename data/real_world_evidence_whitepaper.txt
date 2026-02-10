@@ -1,0 +1,22 @@
+Real-World Evidence in Regulatory Submissions – A Practical Guide
+
+Section 1: Defining Real-World Evidence
+Real-world evidence (RWE) is clinical evidence about the usage and potential benefits or risks of a medical product derived from analysis of real-world data (RWD). Sources of RWD include electronic health records (EHRs), insurance claims and billing data, product and disease registries, patient-generated data from digital health technologies, and data from pragmatic clinical trials. The FDA's RWE Framework, updated in 2024, outlines how RWE can support regulatory decision-making.
+
+Section 2: Regulatory Use Cases for RWE
+RWE has been accepted by the FDA in several contexts: (1) External control arms for single-arm trials, particularly in rare diseases and oncology where randomization is infeasible. (2) Post-marketing safety surveillance, including signal detection and risk characterization. (3) Label expansion for approved products, including new indications and population extensions. (4) Support for regulatory submissions through supplementary efficacy evidence. Between 2020 and 2025, the FDA has accepted RWE as supportive evidence in 23 supplemental NDAs and 8 original BLAs.
+
+Section 3: Data Quality Standards
+RWD used for regulatory submissions must meet stringent quality standards. Required documentation includes data provenance (source system, collection methods, data flow), completeness assessment (missing data patterns, censoring mechanisms), accuracy validation (comparison with reference standards or chart review), and relevance assessment (population representativeness, time period alignment). The FDA recommends using structured data quality frameworks such as the FDA's own RWD quality criteria or the ISPOR-ISPE joint guidelines.
+
+Section 4: Study Design Considerations
+RWE studies supporting regulatory decisions should employ rigorous observational study designs. Recommended approaches include new-user (incident user) designs, active comparator designs, and target trial emulation frameworks. Propensity score methods (matching, weighting, or stratification) should be used to address confounding. Sensitivity analyses addressing unmeasured confounding (e.g., E-value analysis) are required. Pre-registration of RWE study protocols is strongly recommended.
+
+Section 5: Technology Infrastructure Requirements
+Organizations seeking to generate regulatory-grade RWE need: (1) Standardized data models such as OMOP Common Data Model or Sentinel Common Data Model. (2) Data linkage capabilities across disparate sources with privacy-preserving techniques. (3) Validated analytics platforms with audit trails and reproducibility features. (4) Natural language processing capabilities for extracting structured data from clinical narratives. Investment in RWE infrastructure typically ranges from $2-5 million for a mid-sized pharmaceutical company.
+
+Section 6: Case Studies
+Case Study A: A rare disease sponsor used EHR-derived external controls to support a single-arm trial, saving an estimated 3 years and $80 million versus a traditional RCT design. The FDA accepted the RWE-augmented submission. Case Study B: A large oncology sponsor used claims data to expand an approved indication to a broader patient population, reducing the supplemental NDA timeline by 2 years. Case Study C: A post-market safety study using linked EHR-claims data identified a safety signal 18 months earlier than traditional pharmacovigilance methods.
+
+Section 7: Future Directions
+The regulatory acceptance of RWE is expected to expand significantly over the next 5 years. Key enablers include improved data interoperability through FHIR standards, advances in causal inference methodology, maturation of federated data networks that enable multi-site analyses without data sharing, and growing acceptance of hybrid trial designs that combine randomized and observational elements. Organizations are advised to invest in RWE capabilities as a strategic imperative.
