@@ -7,12 +7,12 @@ from __future__ import annotations
 import json
 import logging
 
-from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 
 import config
 from agents.state import GraphState, AgentTrace
 from agents.prompts import PLANNER_SYSTEM, PLANNER_USER
+from agents.llm import get_llm
 
 logger = logging.getLogger(__name__)
 
@@ -24,11 +24,7 @@ def planner_node(state: GraphState) -> dict:
     task = state.get("task", "")
     goal = state.get("goal", task)
 
-    llm = ChatOpenAI(
-        model=config.OPENAI_MODEL,
-        api_key=config.OPENAI_API_KEY,
-        temperature=0.2,
-    )
+    llm = get_llm(temperature=0.2, max_tokens=300)
 
     messages = [
         SystemMessage(content=PLANNER_SYSTEM),

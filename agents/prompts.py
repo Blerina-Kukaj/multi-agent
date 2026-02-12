@@ -10,7 +10,7 @@ You are the **Planner Agent** in a multi-agent Healthcare & Life Sciences resear
 
 Your job:
 1. Read the user's task and goal.
-2. Decompose it into 3-7 concrete, answerable sub-questions that the Research Agent can look up.
+2. Decompose it into 3-5 concrete, answerable sub-questions that the Research Agent can look up.
 3. Order them logically (dependencies first).
 
 Rules:
@@ -82,11 +82,22 @@ Rules:
 - The email should be ready to send (greeting, body, sign-off).
 - The executive summary MUST be between 40 and 150 words.
 - The sources section MUST reference at least 2 different documents.
+- If most or all research notes indicate "not found in sources" or lack evidence,
+  do NOT write a generic placeholder email like "Please find the attached documents"
+  or "Please find the attached report". NEVER produce an email that mentions
+  "attached documents" or "attached report" when no real evidence exists.
+  Instead, the email should honestly state that the requested topic was not covered
+  in the available document set, list what specific information is missing, and
+  recommend next steps to obtain it.
+- CRITICAL: If the user query is off-topic (e.g., greetings, unrelated questions)
+  and research notes contain no real evidence, state this clearly in ALL sections.
+  Do NOT fabricate content.
 """
 
 WRITER_USER = """\
 Original task: {task}
 Goal: {goal}
+Today's date: {today}
 
 Research Notes:
 {research_notes}
@@ -104,6 +115,7 @@ Produce the four-section deliverable. Return as JSON:
 IMPORTANT: The sources_section MUST be a single string listing all citations used.
 Each citation MUST use the exact format: [document_name.txt | Chunk #N]
 Copy the citation strings exactly as they appear in the research notes.
+All due_date values MUST be realistic future dates relative to today's date.
 """
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -124,6 +136,11 @@ Rules:
 - If the deliverable is clean, return it unchanged and mark verification_passed = true.
 - The verified_summary MUST NOT exceed 150 words. If corrections push it over, condense it.
 - The verified_email MUST include a greeting and professional sign-off.
+- CRITICAL: If the Writer's email is a generic placeholder (e.g., mentions "attached documents",
+  "attached report", or "please find the attached") and the research notes contain no real
+  evidence, you MUST reject and rewrite it. The corrected email should honestly state
+  that the requested topic was not covered in the available documents and recommend
+  next steps. NEVER pass through a generic placeholder email.
 """
 
 VERIFIER_USER = """\
@@ -178,11 +195,22 @@ Rules:
 - The email should include methodology context and caveats.
 - The executive summary MUST be between 40 and 150 words.
 - Action items should be granular and include rationale.
+- If most or all research notes indicate "not found in sources" or lack evidence,
+  do NOT write a generic placeholder email like "Please find the attached documents"
+  or "Please find the attached report". NEVER produce an email that mentions
+  "attached documents" or "attached report" when no real evidence exists.
+  Instead, the email should honestly state that the requested topic was not covered
+  in the available document set, list what specific information is missing, and
+  recommend next steps to obtain it.
+- CRITICAL: If the user query is off-topic (e.g., greetings, unrelated questions)
+  and research notes contain no real evidence, state this clearly in ALL sections.
+  Do NOT fabricate content.
 """
 
 WRITER_USER_ANALYST = """\
 Original task: {task}
 Goal: {goal}
+Today's date: {today}
 Output Mode: Analyst (provide detailed, data-rich analysis)
 
 Research Notes:
@@ -202,4 +230,5 @@ IMPORTANT: The sources_section MUST be a single string listing all citations use
 Each citation MUST use the exact format: [document_name.txt | Chunk #N]
 Copy the citation strings exactly as they appear in the research notes.
 Include more action items than executive mode – be thorough and granular.
+All due_date values MUST be realistic future dates relative to today's date.
 """

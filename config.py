@@ -16,12 +16,9 @@ CHROMA_PERSIST_DIR: str = os.getenv("CHROMA_PERSIST_DIR", "./chroma_db")
 CHROMA_COLLECTION: str = os.getenv("CHROMA_COLLECTION", "healthcare_docs")
 
 # ── Retrieval ────────────────────────────────────────────────────────────────
-CHUNK_SIZE: int = int(os.getenv("CHUNK_SIZE", "500"))
-CHUNK_OVERLAP: int = int(os.getenv("CHUNK_OVERLAP", "50"))
+CHUNK_SIZE: int = int(os.getenv("CHUNK_SIZE", "1000"))
+CHUNK_OVERLAP: int = int(os.getenv("CHUNK_OVERLAP", "100"))
 TOP_K: int = int(os.getenv("TOP_K", "5"))
-
-# ── App ──────────────────────────────────────────────────────────────────────
-LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
 
 # ── Paths ────────────────────────────────────────────────────────────────────
 DATA_DIR: str = os.path.join(os.path.dirname(__file__), "data")

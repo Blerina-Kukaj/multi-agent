@@ -8,7 +8,7 @@ flows cleanly through the Plan → Research → Draft → Verify → Deliver pip
 from __future__ import annotations
 
 import time
-from typing import TypedDict, Annotated
+from typing import TypedDict
 from dataclasses import dataclass, field
 
 
@@ -56,6 +56,7 @@ class GraphState(TypedDict, total=False):
     # Input
     task: str                            # Raw user request
     goal: str                            # Optional goal context
+    output_mode: str                     # "executive" or "analyst"
 
     # Planner output
     plan: list[str]                      # Ordered sub-questions / steps
