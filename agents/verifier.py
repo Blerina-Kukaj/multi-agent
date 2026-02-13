@@ -7,37 +7,24 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 
 from langchain_core.messages import SystemMessage, HumanMessage
 
-import config
-from agents.state import GraphState, AgentTrace, ActionItem
+from agents.state import GraphState, ActionItem, AgentMetrics
 from agents.prompts import VERIFIER_SYSTEM, VERIFIER_USER
 from agents.llm import get_llm
+from agents.utils import parse_llm_json, has_real_evidence
 
 logger = logging.getLogger(__name__)
 
 
-def _has_real_evidence(state: GraphState) -> bool:
-    """Return True only if at least one research note has real sourced content."""
-    notes = state.get("research_notes", [])
-    if not notes:
-        return False
-    for n in notes:
-        text = n.content.lower()
-        if "not found in sources" not in text and "additional information needed" not in text:
-            return True
-    return False
-
-
 def _format_notes_for_verifier(state: GraphState) -> str:
-    """Serialize research notes for verifier context (compact format)."""
+    """Serialize research notes for verifier context."""
     notes = state.get("research_notes", [])
     parts: list[str] = []
     for i, n in enumerate(notes, 1):
-        # Truncate long notes to first 200 chars to reduce prompt size
-        content = n.content[:200] + "..." if len(n.content) > 200 else n.content
-        parts.append(f"Note {i}: {content} | Citation: {n.citation}")
+        parts.append(f"Note {i}: {n.content} | Citation: {n.citation}")
     return "\n".join(parts)
 
 
@@ -59,9 +46,23 @@ def _format_action_items(items: list[ActionItem]) -> str:
 
 def verifier_node(state: GraphState) -> dict:
     """LangGraph node: verify the writer's deliverable."""
-    trace = AgentTrace(agent="Verifier")
+    # If no real evidence, pass through writer output (skip LLM verification)
+    if not has_real_evidence(state.get("research_notes", [])):
+        logger.info("Verifier: No real evidence — passing through writer output")
+        return {
+            "verification_passed": True,
+            "verification_issues": [],
+            "verified_summary": state.get("executive_summary", ""),
+            "verified_email": state.get("client_email", ""),
+            "verified_action_items": state.get("action_items", []),
+            "verified_sources": state.get("sources_section", ""),
+            "agent_metrics": [AgentMetrics(agent="verifier")],
+        }
 
-    llm = get_llm(temperature=0.0, max_tokens=1500)
+    metrics = AgentMetrics(agent="verifier")
+    t0 = time.perf_counter()
+
+    llm = get_llm(temperature=0.0, max_tokens=2000)
 
     messages = [
         SystemMessage(content=VERIFIER_SYSTEM),
@@ -79,25 +80,13 @@ def verifier_node(state: GraphState) -> dict:
 
     try:
         response = llm.invoke(messages)
+        metrics.latency_s = round(time.perf_counter() - t0, 2)
+        usage = getattr(response, "usage_metadata", None) or {}
+        metrics.input_tokens = usage.get("input_tokens", 0)
+        metrics.output_tokens = usage.get("output_tokens", 0)
+
         raw = response.content.strip()
-        # Strip markdown code fences if present
-        if raw.startswith("```"):
-            raw = raw.split("\n", 1)[1].rsplit("```", 1)[0].strip()
-        # Extract the first complete JSON object using brace-counting
-        if "{" in raw:
-            start = raw.index("{")
-            depth = 0
-            end = start
-            for i in range(start, len(raw)):
-                if raw[i] == "{":
-                    depth += 1
-                elif raw[i] == "}":
-                    depth -= 1
-                    if depth == 0:
-                        end = i
-                        break
-            raw = raw[start:end + 1]
-        parsed = json.loads(raw)
+        parsed = parse_llm_json(raw)
 
         verified_action_items = [
             ActionItem(
@@ -108,10 +97,6 @@ def verifier_node(state: GraphState) -> dict:
             )
             for a in parsed.get("verified_action_items", [])
         ]
-
-        tokens_in = response.response_metadata.get("token_usage", {}).get("prompt_tokens", 0)
-        tokens_out = response.response_metadata.get("token_usage", {}).get("completion_tokens", 0)
-        trace.finish(tokens_in=tokens_in, tokens_out=tokens_out)
 
         issues = parsed.get("issues", [])
         passed = parsed.get("verification_passed", len(issues) == 0)
@@ -129,11 +114,12 @@ def verifier_node(state: GraphState) -> dict:
         }
 
         # If no real evidence exists, drop the email
-        if not _has_real_evidence(state):
+        if not has_real_evidence(state.get("research_notes", [])):
             result["verified_email"] = ""
 
     except Exception as e:
-        trace.finish(error=str(e))
+        metrics.latency_s = round(time.perf_counter() - t0, 2)
+        metrics.error = str(e)
         logger.error("Verifier failed: %s", e)
         # On failure, pass through writer output unchanged
         result = {
@@ -145,8 +131,5 @@ def verifier_node(state: GraphState) -> dict:
             "verified_sources": state.get("sources_section", ""),
         }
 
-    traces = list(state.get("traces", []))
-    traces.append(trace)
-    result["traces"] = traces
-
+    result["agent_metrics"] = [metrics]
     return result

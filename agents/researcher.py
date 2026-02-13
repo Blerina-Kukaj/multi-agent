@@ -7,14 +7,15 @@ from __future__ import annotations
 
 import json
 import logging
-import re
+import time
 
 from langchain_core.messages import SystemMessage, HumanMessage
 
 import config
-from agents.state import GraphState, AgentTrace, ResearchNote
+from agents.state import GraphState, ResearchNote, AgentMetrics
 from agents.prompts import RESEARCHER_SYSTEM, RESEARCHER_USER
 from agents.llm import get_llm
+from agents.utils import parse_llm_json
 from retrieval.vector_store import retrieve
 
 logger = logging.getLogger(__name__)
@@ -34,8 +35,10 @@ def _gather_chunks(plan: list[str], top_k: int = 8) -> str:
     docs = retrieve(combined_query, top_k=top_k)
     for doc in docs:
         cid = doc.metadata.get("citation", "")
-        if cid not in seen_ids:
-            seen_ids.add(cid)
+        # Use content hash as fallback ID to avoid deduplicating different uncited chunks
+        dedup_key = cid if cid else hash(doc.page_content)
+        if dedup_key not in seen_ids:
+            seen_ids.add(dedup_key)
             formatted_chunks.append(
                 f"--- {cid} ---\n{doc.page_content}\n"
             )
@@ -45,14 +48,10 @@ def _gather_chunks(plan: list[str], top_k: int = 8) -> str:
 
 def researcher_node(state: GraphState) -> dict:
     """LangGraph node: produce research notes grounded in retrieved evidence."""
-    trace = AgentTrace(agent="Researcher")
-
     plan = state.get("plan", [])
     if not plan:
-        trace.finish(error="No plan provided")
-        traces = list(state.get("traces", []))
-        traces.append(trace)
-        return {"research_notes": [], "traces": traces}
+        logger.error("Researcher: No plan provided")
+        return {"research_notes": []}
 
     # Retrieve evidence
     chunks_text = _gather_chunks(plan, top_k=config.TOP_K)
@@ -69,14 +68,18 @@ def researcher_node(state: GraphState) -> dict:
         ),
     ]
 
+    metrics = AgentMetrics(agent="researcher")
+    t0 = time.perf_counter()
+
     try:
         response = llm.invoke(messages)
+        metrics.latency_s = round(time.perf_counter() - t0, 2)
+        usage = getattr(response, "usage_metadata", None) or {}
+        metrics.input_tokens = usage.get("input_tokens", 0)
+        metrics.output_tokens = usage.get("output_tokens", 0)
+
         raw = response.content.strip()
-        if raw.startswith("```"):
-            raw = raw.split("\n", 1)[1].rsplit("```", 1)[0].strip()
-        # Fix common LLM JSON issues: trailing commas before } or ]
-        raw = re.sub(r',\s*([}\]])', r'\1', raw)
-        parsed = json.loads(raw)
+        parsed = parse_llm_json(raw)
 
         notes: list[ResearchNote] = []
         for item in parsed:
@@ -87,17 +90,18 @@ def researcher_node(state: GraphState) -> dict:
             )
             notes.append(note)
 
-        tokens_in = response.response_metadata.get("token_usage", {}).get("prompt_tokens", 0)
-        tokens_out = response.response_metadata.get("token_usage", {}).get("completion_tokens", 0)
-        trace.finish(tokens_in=tokens_in, tokens_out=tokens_out)
         logger.info("Researcher produced %d notes", len(notes))
 
+    except json.JSONDecodeError as e:
+        metrics.latency_s = round(time.perf_counter() - t0, 2)
+        metrics.error = f"JSON parse: {e}"
+        logger.error("Researcher JSON parse failed: %s", e)
+        notes = []
+
     except Exception as e:
-        trace.finish(error=str(e))
+        metrics.latency_s = round(time.perf_counter() - t0, 2)
+        metrics.error = str(e)
         logger.error("Researcher failed: %s", e)
         notes = []
 
-    traces = list(state.get("traces", []))
-    traces.append(trace)
-
-    return {"research_notes": notes, "traces": traces}
+    return {"research_notes": notes, "agent_metrics": [metrics]}

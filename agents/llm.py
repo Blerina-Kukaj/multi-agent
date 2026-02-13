@@ -19,6 +19,8 @@ def get_llm(temperature: float = 0.2, max_tokens: int | None = None) -> ChatOpen
         "model": config.OPENAI_MODEL,
         "api_key": config.OPENAI_API_KEY,
         "temperature": temperature,
+        "max_retries": 3,
+        "request_timeout": 60,
     }
     if max_tokens:
         kwargs["max_tokens"] = max_tokens

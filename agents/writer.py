@@ -6,14 +6,15 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 from datetime import date
 
 from langchain_core.messages import SystemMessage, HumanMessage
 
-import config
-from agents.state import GraphState, AgentTrace, ActionItem
+from agents.state import GraphState, ActionItem, AgentMetrics
 from agents.prompts import WRITER_SYSTEM, WRITER_USER, WRITER_SYSTEM_ANALYST, WRITER_USER_ANALYST
 from agents.llm import get_llm
+from agents.utils import parse_llm_json, has_real_evidence
 
 logger = logging.getLogger(__name__)
 
@@ -27,28 +28,25 @@ def _format_notes(state: GraphState) -> str:
     return "\n\n".join(parts)
 
 
-def _has_real_evidence(state: GraphState) -> bool:
-    """Return True only if at least one research note has real sourced content."""
-    notes = state.get("research_notes", [])
-    if not notes:
-        return False
-    for n in notes:
-        text = n.content.lower()
-        if "not found in sources" not in text and "additional information needed" not in text:
-            return True
-    return False
-
-
 def writer_node(state: GraphState) -> dict:
     """LangGraph node: produce the four-section deliverable."""
-    trace = AgentTrace(agent="Writer")
+    notes = state.get("research_notes", [])
+
+    # If no notes or none carry real evidence, return a clean "out of scope"
+    # response immediately — no LLM call needed.
+    if not notes or not has_real_evidence(notes):
+        logger.info("Writer: No grounded evidence — returning out-of-scope response")
+        return {
+            "executive_summary": "",
+            "client_email": "",
+            "action_items": [],
+            "sources_section": (
+                "No sources available — the query did not match any indexed documents."
+            ),
+            "agent_metrics": [AgentMetrics(agent="writer")],
+        }
 
     notes_text = _format_notes(state)
-    if not notes_text:
-        trace.finish(error="No research notes provided")
-        traces = list(state.get("traces", []))
-        traces.append(trace)
-        return {"traces": traces}
 
     llm = get_llm(temperature=0.3, max_tokens=1500)
 
@@ -73,12 +71,18 @@ def writer_node(state: GraphState) -> dict:
         ),
     ]
 
+    metrics = AgentMetrics(agent="writer")
+    t0 = time.perf_counter()
+
     try:
         response = llm.invoke(messages)
+        metrics.latency_s = round(time.perf_counter() - t0, 2)
+        usage = getattr(response, "usage_metadata", None) or {}
+        metrics.input_tokens = usage.get("input_tokens", 0)
+        metrics.output_tokens = usage.get("output_tokens", 0)
+
         raw = response.content.strip()
-        if raw.startswith("```"):
-            raw = raw.split("\n", 1)[1].rsplit("```", 1)[0].strip()
-        parsed = json.loads(raw)
+        parsed = parse_llm_json(raw)
 
         action_items = [
             ActionItem(
@@ -90,9 +94,6 @@ def writer_node(state: GraphState) -> dict:
             for a in parsed.get("action_items", [])
         ]
 
-        tokens_in = response.response_metadata.get("token_usage", {}).get("prompt_tokens", 0)
-        tokens_out = response.response_metadata.get("token_usage", {}).get("completion_tokens", 0)
-        trace.finish(tokens_in=tokens_in, tokens_out=tokens_out)
         logger.info("Writer produced deliverable")
 
         result = {
@@ -103,7 +104,7 @@ def writer_node(state: GraphState) -> dict:
         }
 
         # If no real evidence was found, drop the email entirely
-        if not _has_real_evidence(state):
+        if not has_real_evidence(state.get("research_notes", [])):
             result["client_email"] = ""
 
         # Normalize sources_section to string if LLM returned a list or dict
@@ -117,13 +118,17 @@ def writer_node(state: GraphState) -> dict:
         elif not isinstance(src, str):
             result["sources_section"] = str(src)
 
+    except json.JSONDecodeError as e:
+        metrics.latency_s = round(time.perf_counter() - t0, 2)
+        metrics.error = f"JSON parse: {e}"
+        logger.error("Writer JSON parse failed: %s", e)
+        result = {}
+
     except Exception as e:
-        trace.finish(error=str(e))
+        metrics.latency_s = round(time.perf_counter() - t0, 2)
+        metrics.error = str(e)
         logger.error("Writer failed: %s", e)
         result = {}
 
-    traces = list(state.get("traces", []))
-    traces.append(trace)
-    result["traces"] = traces
-
+    result["agent_metrics"] = [metrics]
     return result

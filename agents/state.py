@@ -7,29 +7,9 @@ flows cleanly through the Plan → Research → Draft → Verify → Deliver pip
 
 from __future__ import annotations
 
-import time
-from typing import TypedDict
-from dataclasses import dataclass, field
-
-
-# ── Observability record for a single agent step ───────────────────────────
-@dataclass
-class AgentTrace:
-    """One row in the observability table."""
-    agent: str = ""
-    status: str = "pending"       # pending | running | success | error
-    latency_s: float = 0.0
-    tokens_in: int = 0
-    tokens_out: int = 0
-    error: str = ""
-    started_at: float = field(default_factory=time.time)
-
-    def finish(self, tokens_in: int = 0, tokens_out: int = 0, error: str = "") -> None:
-        self.latency_s = round(time.time() - self.started_at, 2)
-        self.tokens_in = tokens_in
-        self.tokens_out = tokens_out
-        self.status = "error" if error else "success"
-        self.error = error
+import operator
+from typing import Annotated, TypedDict
+from dataclasses import dataclass
 
 
 # ── Research note produced by the Research Agent ───────────────────────────
@@ -49,6 +29,17 @@ class ActionItem:
     owner: str
     due_date: str
     confidence: str   # High / Medium / Low
+
+
+# ── Per-agent observability metrics ────────────────────────────────────────
+@dataclass
+class AgentMetrics:
+    """Latency, token usage, and error tracking for one agent."""
+    agent: str               # "planner", "researcher", "writer", "verifier"
+    latency_s: float = 0.0   # Wall-clock seconds
+    input_tokens: int = 0
+    output_tokens: int = 0
+    error: str = ""          # Empty = no error
 
 
 # ── Central graph state ────────────────────────────────────────────────────
@@ -79,4 +70,4 @@ class GraphState(TypedDict, total=False):
     verified_sources: str
 
     # Observability
-    traces: list[AgentTrace]
+    agent_metrics: Annotated[list[AgentMetrics], operator.add]  # Accumulated per-agent

@@ -16,6 +16,13 @@ from agents.writer import writer_node
 from agents.verifier import verifier_node
 
 
+def _should_verify(state: GraphState) -> str:
+    """Route to verifier only if the writer produced output."""
+    if state.get("executive_summary") or state.get("client_email"):
+        return "verifier"
+    return END
+
+
 @lru_cache(maxsize=1)
 def build_graph() -> StateGraph:
     """Construct and compile the multi-agent LangGraph (cached after first call)."""
@@ -27,11 +34,11 @@ def build_graph() -> StateGraph:
     workflow.add_node("writer", writer_node)
     workflow.add_node("verifier", verifier_node)
 
-    # Linear pipeline: Plan → Research → Draft → Verify → END
+    # Pipeline: Plan → Research → Draft → (Verify if output exists) → END
     workflow.set_entry_point("planner")
     workflow.add_edge("planner", "researcher")
     workflow.add_edge("researcher", "writer")
-    workflow.add_edge("writer", "verifier")
+    workflow.add_conditional_edges("writer", _should_verify, {"verifier": "verifier", END: END})
     workflow.add_edge("verifier", END)
 
     return workflow.compile()
@@ -53,14 +60,13 @@ def run_pipeline(task: str, goal: str = "", output_mode: str = "executive") -> G
     Returns
     -------
     GraphState
-        The final state containing all deliverables, traces, and metadata.
+        The final state containing all deliverables and metadata.
     """
     graph = build_graph()
     initial_state: GraphState = {
         "task": task,
         "goal": goal or task,
         "output_mode": output_mode,
-        "traces": [],
     }
     final_state = graph.invoke(initial_state)
     return final_state
@@ -79,6 +85,3 @@ if __name__ == "__main__":
     print("\n=== ISSUES ===")
     for issue in result.get("verification_issues", []):
         print(f"  • {issue}")
-    print("\n=== TRACES ===")
-    for t in result.get("traces", []):
-        print(f"  {t.agent}: {t.status} ({t.latency_s}s, {t.tokens_in}/{t.tokens_out} tokens)")
