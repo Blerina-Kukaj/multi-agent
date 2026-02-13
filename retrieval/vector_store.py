@@ -25,7 +25,7 @@ def get_embeddings() -> OpenAIEmbeddings:
     if _embeddings is None:
         _embeddings = OpenAIEmbeddings(
             openai_api_key=config.OPENAI_API_KEY,
-            model="text-embedding-3-small",
+            model=config.EMBEDDING_MODEL,
         )
     return _embeddings
 

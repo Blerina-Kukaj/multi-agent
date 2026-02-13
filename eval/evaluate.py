@@ -108,10 +108,6 @@ def check_multiple_sources(result: dict) -> bool:
     return len(unique_docs) >= 2
 
 
-def check_has_traces(result: dict) -> bool:
-    return len(result.get("traces", [])) >= 4  # All 4 agents
-
-
 def check_verifier_ran(result: dict) -> bool:
     return "verification_passed" in result
 
@@ -133,7 +129,6 @@ CHECKS = [
     ("Has action items", check_has_action_items),
     ("Action items complete", check_action_items_complete),
     ("Has citations", check_has_citations),
-    ("All agents traced", check_has_traces),
     ("Verifier ran", check_verifier_ran),
     ("No empty sections", check_no_empty_sections),
 ]

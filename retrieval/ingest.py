@@ -19,7 +19,7 @@ def main() -> None:
 
     print("Building vector store ...")
     store = build_vector_store(chunks)
-    count = store._collection.count()
+    count = len(store.get()["ids"])
     print(f"   Stored {count} vectors in ChromaDB")
 
     print("Ingestion complete!")

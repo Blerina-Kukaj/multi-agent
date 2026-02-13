@@ -1,9 +1,46 @@
+# Virtual environments
 .venv/
+.conda/
+env/
+venv/
+
+# Python
 __pycache__/
 *.pyc
-.env
-chroma_db/
+*.pyo
+*.pyd
 *.egg-info/
 dist/
 build/
+*.egg
+
+# Environment variables
+.env
+
+# Vector store (regenerated via ingest)
+chroma_db/
+
+# Streamlit
 .streamlit/secrets.toml
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Evaluation outputs (regenerated)
+eval/eval_results.json
+eval/spec_compliance_report.json
+eval/spec_compliance_test.py
+eval/test_output.json
+
+# Misc
+*.log
+.cache/

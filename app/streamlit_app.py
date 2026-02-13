@@ -15,17 +15,14 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 import streamlit as st
 import pandas as pd
-from datetime import datetime
 
 from agents.graph import run_pipeline
-from agents.state import AgentTrace, ActionItem
+from agents.state import ActionItem, AgentMetrics
 from agents.guardrails import validate_and_sanitize, PromptInjectionError
-from agents.obs_logger import save_run_log, compute_aggregated_metrics, LOGS_DIR
 
 # ─── Page config ────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Enterprise Multi-Agent Copilot",
-    page_icon="+",
     layout="wide",
 )
 
@@ -33,8 +30,6 @@ st.title("Enterprise Multi-Agent Copilot")
 st.caption("Healthcare & Life Sciences — Plan → Research → Draft → Verify → Deliver")
 
 # ─── Session state ──────────────────────────────────────────────────────────
-if "run_history" not in st.session_state:
-    st.session_state.run_history = []
 if "selected_sample" not in st.session_state:
     st.session_state.selected_sample = None
 
@@ -120,10 +115,10 @@ with st.sidebar:
     st.divider()
     st.markdown(
         "**Workflow:**\n"
-        "1. Planner decomposes your task\n"
-        "2. Researcher retrieves evidence\n"
-        "3. Writer drafts the deliverable\n"
-        "4. Verifier checks for hallucinations"
+        "1. Planner decomposes task and creates execution plan\n"
+        "2. Researcher retrieves grounded notes with citations\n"
+        "3. Writer produces final deliverable using research notes\n"
+        "4. Verifier checks for hallucinations, missing evidence, contradictions"
     )
     st.divider()
     st.markdown(
@@ -177,43 +172,10 @@ if submitted and task.strip():
 
     st.success(f"Pipeline completed in {elapsed}s")
 
-    # ── Store run in history + persist log ───
-    traces: list[AgentTrace] = result.get("traces", [])
-    st.session_state.run_history.append({
-        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "task": clean_task[:80],
-        "mode": output_mode,
-        "elapsed": elapsed,
-        "total_tokens_in": sum(t.tokens_in for t in traces),
-        "total_tokens_out": sum(t.tokens_out for t in traces),
-        "agents": [
-            {
-                "agent": t.agent,
-                "status": t.status,
-                "latency_s": t.latency_s,
-                "tokens_in": t.tokens_in,
-                "tokens_out": t.tokens_out,
-                "error": t.error or "",
-            }
-            for t in traces
-        ],
-    })
-
-    # Persist per-run observability log to /logs
-    run_id = save_run_log(
-        task=clean_task,
-        goal=clean_goal,
-        output_mode=mode,
-        elapsed_s=elapsed,
-        traces=traces,
-        verification_passed=result.get("verification_passed"),
-        verification_issues=result.get("verification_issues", []),
-    )
-
     # ── Tabs for deliverables ───
     summary_label = "Analyst Summary" if mode == "analyst" else "Executive Summary"
-    tab_summary, tab_email, tab_actions, tab_sources, tab_trace, tab_obs, tab_metrics = st.tabs(
-        [summary_label, "Client Email", "Action Items", "Sources", "Trace Log", "Observability", "Aggregated Metrics"]
+    tab_summary, tab_email, tab_actions, tab_sources, tab_trace, tab_observe = st.tabs(
+        [summary_label, "Client Email", "Action Items", "Sources", "Trace Log", "Observability"]
     )
 
     # Use verified versions if available, else fall back to writer output
@@ -259,186 +221,111 @@ if submitted and task.strip():
         st.markdown("### Sources & Citations")
         st.markdown(sources or "_No sources listed._")
 
+    # ── Observability ───
+    with tab_observe:
+        st.markdown("### Observability")
+        metrics_list: list[AgentMetrics] = result.get("agent_metrics", [])
+        if metrics_list:
+            rows = []
+            for m in metrics_list:
+                total_tokens = m.input_tokens + m.output_tokens
+                rows.append({
+                    "Agent": m.agent.capitalize(),
+                    "Latency (s)": m.latency_s,
+                    "Input Tokens": m.input_tokens,
+                    "Output Tokens": m.output_tokens,
+                    "Total Tokens": total_tokens,
+                    "Error": m.error or "—",
+                })
+            df_obs = pd.DataFrame(rows)
+            st.dataframe(df_obs, use_container_width=True, hide_index=True)
+
+            # Totals row
+            total_latency = sum(m.latency_s for m in metrics_list)
+            total_in = sum(m.input_tokens for m in metrics_list)
+            total_out = sum(m.output_tokens for m in metrics_list)
+            errors = [m for m in metrics_list if m.error]
+
+            col1, col2, col3, col4 = st.columns(4)
+            col1.metric("Total Latency", f"{total_latency:.1f}s")
+            col2.metric("Total Input Tokens", f"{total_in:,}")
+            col3.metric("Total Output Tokens", f"{total_out:,}")
+            col4.metric("Errors", len(errors))
+        else:
+            st.info("No observability data available.")
+
     # ── Trace / Agent log ───
     with tab_trace:
         st.markdown("### Agent Trace Log")
+        st.caption(f"Pipeline: Plan → Research → Write → Verify  |  Mode: {mode}")
 
-        # Plan
+        # ── 1. Planner ──
         plan = result.get("plan", [])
-        if plan:
-            with st.expander("Planner - Execution Plan", expanded=True):
+        with st.expander(f"Planner  —  {len(plan)} sub-questions", expanded=False):
+            if plan:
                 for i, q in enumerate(plan, 1):
                     st.markdown(f"{i}. {q}")
+            else:
+                st.info("No execution plan generated.")
 
-        # Research notes
+        # ── 2. Researcher ──
         notes = result.get("research_notes", [])
-        if notes:
-            with st.expander("Researcher - Research Notes", expanded=False):
+        found = [n for n in notes if "not found in sources" not in n.content.lower()]
+        gaps = [n for n in notes if "not found in sources" in n.content.lower()]
+        with st.expander(
+            f"Researcher  —  {len(found)} notes grounded, {len(gaps)} gaps",
+            expanded=False,
+        ):
+            if notes:
                 for n in notes:
-                    st.markdown(f"- {n.content}")
-                    st.caption(f"Citation: {n.citation}")
+                    is_gap = "not found in sources" in n.content.lower()
+                    icon = "⚠️" if is_gap else "✅"
+                    st.markdown(f"{icon} {n.content}")
+                    st.caption(f"Citation: {n.citation or 'No citation'}")
+            else:
+                st.info("No research notes produced.")
 
-        # Verification issues
+        # ── 3. Writer ──
+        writer_summary = result.get("executive_summary", "")
+        writer_email = result.get("client_email", "")
+        writer_actions = result.get("action_items", [])
+        writer_produced = bool(writer_summary or writer_email)
+        with st.expander(
+            f"Writer  —  {'output produced' if writer_produced else 'skipped (no evidence)'}",
+            expanded=False,
+        ):
+            if writer_produced:
+                word_count = len(writer_summary.split()) if writer_summary else 0
+                st.markdown(f"**Summary:** {word_count} words")
+                st.markdown(f"**Email:** {'generated' if writer_email else 'empty'}")
+                st.markdown(f"**Action items:** {len(writer_actions)}")
+            else:
+                st.info("Writer returned empty output (no grounded evidence).")
+
+        # ── 4. Verifier ──
         issues = result.get("verification_issues", [])
-        if issues:
-            with st.expander("Verifier - Issues Found", expanded=True):
+        v_passed = result.get("verification_passed")
+        verifier_ran = v_passed is not None
+        if verifier_ran:
+            status = "✅ passed" if v_passed else f"⚠️ {len(issues)} issue(s) found & corrected"
+        else:
+            status = "skipped"
+        with st.expander(f"Verifier  —  {status}", expanded=False):
+            if not verifier_ran:
+                st.info("Verifier was skipped (writer produced no output).")
+            elif issues:
                 for issue in issues:
-                    st.warning(issue)
-        else:
-            st.info("Verifier found no issues.")
-
-    # ── Observability ───
-    with tab_obs:
-        st.markdown("### Current Run")
-        traces: list[AgentTrace] = result.get("traces", [])
-        if traces:
-            obs_df = pd.DataFrame(
-                [
-                    {
-                        "Agent": t.agent,
-                        "Status": "PASS" if t.status == "success" else "FAIL",
-                        "Latency (s)": t.latency_s,
-                        "Tokens In": t.tokens_in,
-                        "Tokens Out": t.tokens_out,
-                        "Error": t.error or "–",
-                    }
-                    for t in traces
-                ]
-            )
-            st.dataframe(obs_df, use_container_width=True, hide_index=True)
-
-            # Totals
-            total_latency = sum(t.latency_s for t in traces)
-            total_in = sum(t.tokens_in for t in traces)
-            total_out = sum(t.tokens_out for t in traces)
-            col1, col2, col3 = st.columns(3)
-            col1.metric("Total Latency", f"{total_latency:.1f}s")
-            col2.metric("Total Tokens In", f"{total_in:,}")
-            col3.metric("Total Tokens Out", f"{total_out:,}")
-        else:
-            st.info("No trace data available.")
-
-        # ── Run History ───
-        st.divider()
-        st.markdown("### Run History")
-        if st.session_state.run_history:
-            if st.button("Clear History"):
-                st.session_state.run_history = []
-                st.rerun()
-
-            for i, run in enumerate(reversed(st.session_state.run_history), 1):
-                label = f"Run {len(st.session_state.run_history) - i + 1} — {run['timestamp']} | {run['mode']} | {run['elapsed']}s | {run['task'][:50]}…"
-                with st.expander(label, expanded=(i == 1)):
-                    run_df = pd.DataFrame(
-                        [
-                            {
-                                "Agent": a["agent"],
-                                "Status": "PASS" if a["status"] == "success" else "FAIL",
-                                "Latency (s)": a["latency_s"],
-                                "Tokens In": a["tokens_in"],
-                                "Tokens Out": a["tokens_out"],
-                                "Error": a["error"] or "–",
-                            }
-                            for a in run["agents"]
-                        ]
-                    )
-                    st.dataframe(run_df, use_container_width=True, hide_index=True)
-                    c1, c2, c3 = st.columns(3)
-                    c1.metric("Latency", f"{run['elapsed']}s")
-                    c2.metric("Tokens In", f"{run['total_tokens_in']:,}")
-                    c3.metric("Tokens Out", f"{run['total_tokens_out']:,}")
-        else:
-            st.info("No previous runs yet.")
-
-    # ── Aggregated Metrics ───
-    with tab_metrics:
-        st.markdown("### Aggregated System Metrics")
-        st.caption(f"Computed from all runs saved in `/logs` ({len(list(LOGS_DIR.glob('*.json')))} log files)")
-
-        # Clear logs button
-        col1, col2 = st.columns([3, 1])
-        with col1:
-            pass  # Empty for spacing
-        with col2:
-            if st.button("🗑️ Clear Logs", help="Delete all observability log files"):
-                import shutil
-                if LOGS_DIR.exists():
-                    shutil.rmtree(LOGS_DIR)
-                    LOGS_DIR.mkdir(exist_ok=True)
-                st.success("All logs cleared!")
-                st.rerun()
-
-        metrics = compute_aggregated_metrics()
-
-        if metrics["total_runs"] == 0:
-            st.info("No historical logs found. Run the pipeline to start collecting metrics.")
-        else:
-            # ── Top-level KPIs ───
-            k1, k2, k3, k4 = st.columns(4)
-            k1.metric("Total Runs", metrics["total_runs"])
-            k2.metric("Pipeline Success", f"{metrics['success_rate_pct']}%")
-            k3.metric("Avg Latency", f"{metrics['avg_elapsed_s']}s")
-            verified_corrected = metrics['verification_failed']
-            k4.metric("Verifier Corrections", f"{verified_corrected} / {metrics['total_runs']}")
-
-            st.divider()
-
-            # ── Latency breakdown ───
-            st.markdown("#### Latency")
-            l1, l2, l3 = st.columns(3)
-            l1.metric("Average", f"{metrics['avg_elapsed_s']}s")
-            l2.metric("Minimum", f"{metrics['min_elapsed_s']}s")
-            l3.metric("Maximum", f"{metrics['max_elapsed_s']}s")
-
-            # ── Token usage ───
-            st.markdown("#### Token Usage")
-            t1, t2, t3, t4 = st.columns(4)
-            t1.metric("Total Tokens In", f"{metrics['total_tokens_in']:,}")
-            t2.metric("Total Tokens Out", f"{metrics['total_tokens_out']:,}")
-            t3.metric("Avg In / Run", f"{metrics['avg_tokens_in_per_run']:,}")
-            t4.metric("Avg Out / Run", f"{metrics['avg_tokens_out_per_run']:,}")
-
-            st.divider()
-
-            # ── Per-Agent Performance ───
-            st.markdown("#### Per-Agent Performance (averages across all runs)")
-            agent_data = metrics.get("per_agent", {})
-            if agent_data:
-                agent_order = ["Planner", "Researcher", "Writer", "Verifier"]
-                sorted_agents = sorted(agent_data.items(), key=lambda x: agent_order.index(x[0]) if x[0] in agent_order else 99)
-                agent_rows = []
-                for name, v in sorted_agents:
-                    agent_rows.append({
-                        "Agent": name,
-                        "Runs": v["runs"],
-                        "Avg Latency (s)": v["avg_latency_s"],
-                        "Avg Tokens In": v["avg_tokens_in"],
-                        "Avg Tokens Out": v["avg_tokens_out"],
-                        "Errors": v["error_count"],
-                        "Error Rate": f"{v['error_rate_pct']}%",
-                    })
-                st.dataframe(pd.DataFrame(agent_rows), use_container_width=True, hide_index=True)
-
-            st.divider()
-
-            # ── Mode distribution ───
-            st.markdown("#### Output Mode Distribution")
-            mode_data = metrics.get("mode_distribution", {})
-            if mode_data:
-                mode_df = pd.DataFrame(
-                    [{"Mode": m.title(), "Runs": c, "Share": f"{c / metrics['total_runs'] * 100:.0f}%"} for m, c in mode_data.items()]
-                )
-                st.dataframe(mode_df, use_container_width=True, hide_index=True)
-
-            # ── Verification stats ───
-            st.markdown("#### Verifier Activity")
-            v1, v2, v3 = st.columns(3)
-            v1.metric("Clean Drafts", metrics["verification_passed"])
-            v2.metric("Corrected Drafts", metrics["verification_failed"])
-            clean_pct = metrics['verification_rate_pct']
-            v3.metric("Clean Draft Rate", f"{clean_pct}%")
-            st.caption("Clean Draft = Writer output passed verification with no issues. "
-                       "Corrected Draft = Verifier found and fixed unsupported claims (normal operation).")
+                    text = str(issue)
+                    if text.startswith("[Hallucination]"):
+                        st.error(f"{text}")
+                    elif text.startswith("[Missing Evidence]"):
+                        st.warning(f"{text}")
+                    elif text.startswith("[Contradiction]"):
+                        st.error(f"{text}")
+                    else:
+                        st.warning(f"{text}")
+            else:
+                st.success("No issues found — deliverable passed verification.")
 
 elif submitted:
     st.warning("Please enter a business request.")

@@ -54,7 +54,7 @@ def chunk_documents(
 
     for doc in docs:
         splits = splitter.split_documents([doc])
-        source = doc.metadata["source"]
+        source = doc.metadata.get("source", "unknown")
         start_idx = source_chunks.get(source, 0)
         for i, chunk in enumerate(splits):
             chunk_id = start_idx + i + 1  # 1-indexed

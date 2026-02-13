@@ -7,7 +7,7 @@
 |---|---|
 | **Industry** | Healthcare & Life Sciences |
 | **Stack** | LangGraph + OpenAI + ChromaDB |
-| **Nice-to-haves** | Observability table, Evaluation set (10 test questions) |
+| **Nice-to-haves** | Prompt injection defense, Multi-output mode (Executive/Analyst), Evaluation set (10 test questions) |
 
 ---
 
@@ -111,12 +111,13 @@ python -m eval.evaluate
 /agents                 – Agent definitions and prompts
     __init__.py
     state.py            – Shared LangGraph state schema
-    prompts.py          – All agent system/user prompts
+    prompts.py          – All agent system/user prompts (executive + analyst)
     planner.py          – Planner agent
     researcher.py       – Research agent
-    writer.py           – Writer agent
+    writer.py           – Writer agent (multi-output mode)
     verifier.py         – Verifier agent
     graph.py            – LangGraph workflow orchestration
+    guardrails.py       – Prompt injection defense rules
 /retrieval              – Document loaders and vector search
     __init__.py
     loader.py           – Document chunking & loading
@@ -150,16 +151,22 @@ requirements.txt        – Python dependencies
 
 ---
 
-## Observability
+## Multi-Output Mode
 
-The UI includes an **Observability Table** showing per-agent metrics:
+Toggle between two output styles via the sidebar:
 
-| Agent | Latency (s) | Tokens (in/out) | Status | Errors |
-|---|---|---|---|---|
-| Planner | 1.2 | 320 / 180 | ✅ | – |
-| Researcher | 3.4 | 850 / 620 | ✅ | – |
-| Writer | 2.8 | 1200 / 980 | ✅ | – |
-| Verifier | 1.5 | 900 / 450 | ✅ | – |
+- **Executive Mode** – Concise, C-suite oriented. High-level summary, brief email, key actions only.
+- **Analyst Mode** – Detailed, data-rich. Includes specific metrics, methodology notes, caveats, and granular action items.
+
+---
+
+## Prompt Injection Defense
+
+All user inputs are validated before entering the pipeline (`agents/guardrails.py`):
+
+- **Pattern detection** – Blocks system prompt override attempts, role hijacking, delimiter injection, and data exfiltration.
+- **Input sanitization** – Removes control characters, caps input length at 2000 chars.
+- **Fail-safe** – Rejected inputs show a clear error; the pipeline does not execute.
 
 ---
 
