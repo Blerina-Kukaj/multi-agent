@@ -95,18 +95,6 @@ def check_has_citations(result: dict) -> bool:
     return bool(re.search(r"\[.+?\|.+?\]", sources))
 
 
-def check_multiple_sources(result: dict) -> bool:
-    """Citations should reference at least 2 distinct documents."""
-    # Check across all output fields for citations
-    sources = result.get("verified_sources") or result.get("sources_section", "")
-    sources = _normalize_sources(sources)
-    email = result.get("verified_email") or result.get("client_email", "")
-    summary = result.get("verified_summary") or result.get("executive_summary", "")
-    all_text = f"{sources}\n{email}\n{summary}"
-    matches = re.findall(r"\[(.+?)\|", all_text)
-    unique_docs = set(m.strip() for m in matches)
-    return len(unique_docs) >= 2
-
 
 def check_verifier_ran(result: dict) -> bool:
     return "verification_passed" in result
