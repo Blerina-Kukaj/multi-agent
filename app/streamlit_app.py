@@ -19,6 +19,8 @@ import pandas as pd
 from agents.graph import run_pipeline
 from agents.state import ActionItem, AgentMetrics
 from agents.guardrails import validate_and_sanitize, PromptInjectionError
+import config
+from retrieval.ingest import main as ingest_main
 
 # ─── Page config ────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -28,6 +30,21 @@ st.set_page_config(
 
 st.title("Enterprise Multi-Agent Copilot")
 st.caption("Healthcare & Life Sciences — Plan → Research → Draft → Verify → Deliver")
+
+# Ensure vector store exists for first-time deploys. When deploying to
+# Streamlit Cloud the filesystem may be empty; run a one-time ingestion
+# so the app is immediately ready to query.
+try:
+    AUTO_INGEST = str(os.getenv("AUTO_INGEST", "1")).lower() in ("1", "true", "yes")
+    if AUTO_INGEST:
+        persist_dir = config.CHROMA_PERSIST_DIR
+        need_ingest = not os.path.exists(persist_dir) or not any(os.scandir(persist_dir))
+        if need_ingest:
+            with st.spinner("Preparing vector store (one-time setup)…"):
+                ingest_main()
+except Exception as _e:
+    st.error("Vector store setup failed. Check logs or set AUTO_INGEST=0 to skip initial ingest.")
+    st.stop()
 
 # ─── Session state ──────────────────────────────────────────────────────────
 if "selected_sample" not in st.session_state:
